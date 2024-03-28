@@ -1,0 +1,62 @@
+; excerpt-rxlr-start
+fish define wsxx
+    global wp_left, wp_right, wly
+    wsxx = 0.5*(wall.force.contact.x(wp_left) - ...
+           wall.force.contact.x(wp_right))/ wly 
+end
+
+fish define wsyy
+    global wp_bot, wp_top, wlx
+    wsyy = 0.5*(wall.force.contact.y(wp_bot) -  ...
+           wall.force.contact.y(wp_top)  )/ wlx
+end
+; excerpt-rxlr-end
+
+; excerpt-xmps-start
+fish define compute_averagestress
+  global asxx = 0.0
+  global asxy = 0.0
+  global asyx = 0.0
+  global asyy = 0.0
+  loop foreach local contact contact.list("ball-ball")
+    local cforce =  contact.force.global(contact)
+    local cl = ball.pos(contact.end2(contact)) - ...
+               ball.pos(contact.end1(contact))
+    asxx = asxx + comp.x(cforce)*comp.x(cl)
+    asxy = asxy + comp.x(cforce)*comp.y(cl)
+    asyx = asyx + comp.y(cforce)*comp.x(cl)
+    asyy = asyy + comp.y(cforce)*comp.y(cl)
+  endloop
+  asxx = - asxx / (wlx*wly)
+  asxy = - asxy / (wlx*wly)
+  asyx = - asyx / (wlx*wly)
+  asyy = - asyy / (wlx*wly)
+end
+; excerpt-xmps-end
+
+; excerpt-womr-start
+fish define compute_spherestress(rad)
+  command
+    contact group 'insphere' remove
+    contact group 'insphere' range circle radius [rad]
+  endcommand
+  global ssxx = 0.0
+  global ssxy = 0.0
+  global ssyx = 0.0
+  global ssyy = 0.0
+  loop foreach contact contact.groupmap("insphere","ball-ball")
+    local cf = contact.force.global(contact)
+    local cl = ball.pos(contact.end2(contact)) - ...
+               ball.pos(contact.end1(contact))
+    ssxx = ssxx + comp.x(cf) *comp.x(cl)
+    ssxy = ssxy + comp.x(cf) *comp.y(cl)
+    ssyx = ssyx + comp.y(cf) *comp.x(cl)
+    ssyy = ssyy + comp.y(cf) *comp.y(cl)
+  endloop
+  local vol = (math.pi*rad^2)
+  ssxx = - ssxx / vol
+  ssxy = - ssxy / vol
+  ssyx = - ssyx / vol
+  ssyy = - ssyy / vol
+end
+; excerpt-womr-end

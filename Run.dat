@@ -1,0 +1,42 @@
+; Biaxial Stress Test Code
+; Adapted from PFC Rock Testing Example
+; Documentation: https://docs.itascacg.com/pfc700/pfc/docproject/source/manual/examples/examples/granular/granular.html
+
+; Code modified for EPS 171 by Kristen Chiama - Contact: kchiama@g.harvard.edu
+; Last updated: 1/24/2024
+;==============================================================================================================================
+
+model new
+plot 'Plot' movie index 1 interval 500
+
+; Set values for the density of the sample: 
+[density = 2600] 
+
+; Set values for the contact bond friction of the sample: 
+[friction = 0.2]
+
+; Set values for the cohesion and tensile strength of the sample: 
+[pb_ten = 5e6]
+[pb_coh = 5e6]
+
+; Set the confining stress to compact the sample. 
+; Use values: -1e7 = 10 MPa, -5e7 = 50 MPa, -10e7 = 100 MPa.
+; Change the "filename" to the value of confining stress that you use for each experiment. 
+[txx = -1e6]
+[tyy = txx]
+[filename = 'Material1_ 1MPa']
+
+program call 'MakeSample'
+model save ['Sample_' + filename]
+
+program call 'CompactSample'
+model save ['CompactedSample_' + filename]
+
+program call 'ParallelBondSample'
+model save ['BondedSample_' + filename]
+
+program call 'BiaxialTest'
+model save ['BiaxialTest_Final_' + filename]
+
+project save
+program return

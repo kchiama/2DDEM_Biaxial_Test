@@ -1,0 +1,63 @@
+model large-strain on
+
+;define ball and wall friction property
+ball property 'fric' [ballFriction]
+wall property 'fric' [wallFriction]
+
+[ly0 = wly]
+[lx0 = wlx]
+[v0 = wlx*wly]
+[wexx = 0.0]
+[weyy = 0.0]
+[wevol = 0.0]
+
+fish define wexx
+  wexx  = (wlx - lx0) / lx0 
+end
+
+fish define weyy
+  weyy = (wly - ly0) / ly0
+end
+
+fish define wevol
+  wevol = wexx + weyy
+end
+
+fish history name '51' wexx
+fish history name '52' weyy
+fish history name '53' wevol
+history purge
+
+[rate = 5]
+
+wall servo activate off range set name 'vesselTop' ...
+                              set name 'vesselBottom' union 
+wall attribute velocity-y [-rate*wly] range set name 'vesselTop'
+wall attribute velocity-y [ rate*wly] range set name 'vesselBottom'
+
+;set the left and right wall to force-balance the sample ...
+wall servo activate on force-x [txx*wly] ...
+                       velocity-max [rate] range set name 'vesselRight'
+wall servo activate on force-x [-txx*wly] ...
+                       velocity-max [rate] range set name 'vesselLeft'
+
+fish define servo_walls_biaxial
+  wall.servo.force.x(wp_right) =   txx*wly
+  wall.servo.force.x(wp_left)  =  -txx*wly
+end
+fish callback add @servo_walls_biaxial  9.0 
+
+[stop_me = 0]
+[target = 0.1]
+fish define stop_me
+  if weyy <= -target then
+    stop_me = 1
+  endif
+end
+
+ball attribute displacement multiply 0.0
+model calm
+
+model solve fish-halt stop_me
+
+program return

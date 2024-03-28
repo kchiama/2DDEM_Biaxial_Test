@@ -1,0 +1,70 @@
+model large-strain on
+; fname: MakeSample.p2dat
+;
+; Generate a dense granular assembly within a box
+;
+; ========================================================================
+
+; Load utility FISH functions for later use
+
+program call 'StrainUtilities.p2fis' suppress  
+program call 'StressUtilities.p2fis' suppress
+[ballFriction = 0.0]
+[wallFriction = 0.577]
+
+; Define domain extent and default contact model and properties in the CMAT
+; note that since friction is not set (and defaults to zero), shear forces
+; won't develop
+model domain extent -0.1 0.1 
+contact cmat default model linear method deformability emod 1.0e8 kratio 2.5
+
+; Generate a box-wall comprised of 4 independant walls. 
+; pointers to the walls are created for convenience. 
+wall generate name 'vessel' box -0.025 0.025 -0.05 0.05 expand 1.5;xmin xmax ymin ymax
+[wp_left  = wall.find('vesselLeft')]
+[wp_right = wall.find('vesselRight')]
+[wp_bot   = wall.find('vesselBottom')]
+[wp_top   = wall.find('vesselTop')]
+
+
+; FISH functions to get vessel dimensions
+fish define wlx
+  wlx  = wall.pos.x(wp_right) - wall.pos.x(wp_left)
+end
+fish define wly
+  wly  = wall.pos.y(wp_top)   - wall.pos.y(wp_bot)
+end
+
+; Generate a cloud of overlapping balls with a target porosity
+; and assign density and local damping attributes
+model random 10001
+ball distribute porosity 0.1 radius 0.0005 0.00075 box -0.025 0.025 -0.05 0.05
+ball attribute density @density damp 0.7
+
+;define ball and wall friction property
+ball property 'fric' [ballFriction]
+wall property 'fric' [wallFriction]
+
+; solve to equilibrium
+model cycle 1000 calm 10
+model solve ratio-average 1e-5
+model calm
+model save 'unbonded_sample.sav'
+
+; identify floaters using FISH function defined in make_utilities.p2fis
+fish define identify_floaters
+  loop foreach local ball ball.list
+    ball.group.remove(ball,'floaters')
+    local contactmap = ball.contactmap(ball)
+    local size = map.size(contactmap)
+    if size <= 1 then
+      ball.group(ball) = 'floaters'
+    endif
+  endloop
+end
+[identify_floaters]
+[ini_gstrain(wly)]
+
+program return
+; ========================================================================
+; eof: MakeSample.p2dat

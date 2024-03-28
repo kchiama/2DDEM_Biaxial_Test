@@ -1,0 +1,48 @@
+; excerpt-mxlr-start
+fish define ini_mstrain(sid)
+  command
+    ball attribute displacement multiply 0.0
+  endcommand
+  global mstrains = matrix(2,2)
+  global mp = measure.find(sid)
+end
+
+fish define accumulate_mstrain
+  global msrate =  measure.strain.rate(mp)
+  global mstrains = mstrains + msrate * global.timestep
+  global xxmstrain = mstrains(1,1)
+  global xymstrain = mstrains(1,2)
+  global yxmstrain = mstrains(2,1)
+  global yymstrain = mstrains(2,2)
+end
+; excerpt-mxlr-end
+
+; excerpt-ybnr-start
+fish define ini_gstrain(ly)
+  local pos = vector(0.0,-0.5*ly)*0.75
+  global gb1 = ball.near(pos)
+  ball.group(gb1) = 'gauge_balls'
+  pos = vector( 0.0,-0.5*ly)*0.25
+  global gb2 = ball.near(pos)
+  ball.group(gb2) = 'gauge_balls'
+  pos = vector( 0.0, 0.5*ly)*0.25
+  global gb3 = ball.near(pos)
+  ball.group(gb3) = 'gauge_balls'
+  pos = vector(0.0, 0.5*ly)*0.75
+  global gb4 = ball.near(pos)
+  ball.group(gb4) = 'gauge_balls'
+  global gl12_0  = ball.pos(gb2) - ball.pos(gb1)
+  global gl13_0  = ball.pos(gb3) - ball.pos(gb1)
+  global gl14_0  = ball.pos(gb4) - ball.pos(gb1)
+end
+
+fish define xygstrain
+  local gl12 = ball.pos(gb2) - ball.pos(gb1)
+  global xygstrain12 = (comp.x(gl12) - comp.x(gl12_0))/ comp.y(gl12_0) 
+  local gl13 = ball.pos(gb3) - ball.pos(gb1)
+  global xygstrain13 =  (comp.x(gl13) - comp.x(gl13_0))/ comp.y(gl13_0) 
+  local gl14 = ball.pos(gb4) - ball.pos(gb1)
+  global xygstrain14 =  (comp.x(gl14) - comp.x(gl14_0))/ comp.y(gl14_0) 
+  xygstrain = (xygstrain12 + xygstrain13 + xygstrain14) /3.0
+end
+; excerpt-ybnr-end

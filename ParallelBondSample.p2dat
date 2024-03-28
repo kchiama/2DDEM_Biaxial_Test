@@ -1,0 +1,26 @@
+;Parallel-Bond the sample to apply cohesion and tensile strength.
+; Code modified for EPS 171 by Kristen Chiama - Contact: kchiama@g.harvard.edu
+; Last updated: 1/12/2024
+;==============================================================================================================================
+
+; bond sample using the parallel-bond contact model from Itasca (1999)
+contact model linearpbond range contact type 'ball-ball'
+contact method bond gap 0.1e-4
+contact method deform emod 2.7e9 kratio 1.0 
+
+; set stiffness of bond material
+contact method pb_deform emod 1.0e8 kratio 2.5 
+
+; set bond strengths
+contact property pb_ten @pb_ten pb_coh @pb_coh pb_rmul 0.1 pb_fa 32.6 dp_nratio 0.7
+
+; set some damping at the contacts
+contact property dp_nratio 0.5
+
+; set ball-ball friction to non-zero value
+contact property fric @friction range contact type 'ball-ball'
+
+; Set linear force to 0.0 and force a reset of the linear contact forces.
+contact property lin_force 0.0 0.0 lin_mode 1
+ball attribute force-contact multiply 0.0 moment-contact multiply 0.0
+model cycle 1
